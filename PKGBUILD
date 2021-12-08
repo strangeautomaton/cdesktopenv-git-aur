@@ -5,16 +5,16 @@
 
 _gitname=cdesktopenv
 pkgname="$_gitname"-git
-pkgver=2.3.1
-pkgrel=1
-pkgdesc="Common Desktop Environment"
+pkgver=2.4.0
+pkgrel=0
+pkgdesc="CDE - Common Desktop Environment"
 url="http://sourceforge.net/projects/cdesktopenv/"
 arch=('i686' 'x86_64') # Some parts of CDE are not stable on x86_64 yet.
 license=('LGPL2')
 options=(!strip !zipman)
 install="cdesktopenv.install"
-depends=(openmotif xbitmaps rpcbind mksh ncurses libxss xbitmaps libxinerama)
-makedepends=(tcl ncompress bison)
+depends=(openmotif xbitmaps rpcbind ksh ncurses libxss xbitmaps libxinerama rpcsvc-proto)
+makedepends=(tcl ncompress bison git)
 optdepends=('xorg-fonts-100dpi: additional fonts'
             'cups: for printing support'
             'xinetd: for rpc services')
@@ -25,16 +25,16 @@ source=("git+https://git.code.sf.net/p/cdesktopenv/code"
         'dtlogin.service'
         'fonts.alias'
         'fonts.dir'
-        'startxsession.sh'
-        'cde.desktop')
+        'cde.desktop'
+        'startxsession.sh')
 
 md5sums=('SKIP'
          'ba7fcfcfa2996be6d87b5a90dd94fd7b'
          '18f9ef4643ff7ed6637907f5cbdabecf'
          '5cc80c2851ea90b94e94b0c5d92d81fb'
          '897316929176464ebc9ad085f31e7284'
-         '2e5557241915e4c2761ba136dbcba469'
-         '7d11b9d2bc1234278f14151025744916')
+         '7d11b9d2bc1234278f14151025744916'
+         '2e5557241915e4c2761ba136dbcba469')
 
 pkgver() {
     cd "$srcdir/code/cde"
@@ -42,48 +42,29 @@ pkgver() {
 }
 
 build() {
-    cd "$srcdir/code/cde"
-
-  #sed -e '1i #define FILE_MAP_OPTIMIZE' -i programs/dtfile/Utils.c  # ?
-
-  cat >> config/cf/site.def <<EOF
-#define KornShell /bin/mksh
-#define CppCmd cpp
-#define YaccCmd bison -y
-#define HasTIRPCLib YES
-#define HasZlib YES
-#define DtLocalesToBuild
-EOF
-
-#  mkdir -p imports/x11/include
-#  ln -sf /usr/include/X11 imports/x11/include/
-  
-  (
-     export LANG=C
-     export LC_ALL=C
-     export IMAKECPP=cpp
-     make -j1 World
-  )  
-
-  sed -e "s:mkProd -D :&$pkgdir:" -i admin/IntegTools/dbTools/installCDE
+  cd "$srcdir/code/cde"
+  ./autogen.sh
+  #./configure --prefix=/usr
+  #./configure --libdir=/usr/lib  # TODO ?
+  ./configure --prefix=/usr/dt
+  make
 }
 
 package() {
   echo 'DEBUG: start package'
-  cd "$srcdir/code/cde/admin/IntegTools/dbTools/"
+  #cd "$srcdir/code/cde/admin/IntegTools/dbTools/"
+  cd "$srcdir/code/cde"
 
-  echo 'DEBUG: installCDE'
+  echo 'DEBUG: make install'
   (
     export LANG=C
     export LC_ALL=C
-    export INSTALL_LOCATION="$pkgdir/usr/dt"
-    export LOGFILES_LOCATION="$pkgdir/var/dt"
-    export CONFIGURE_LOCATION="$pkgdir/etc/dt"
-    ./installCDE -s "$srcdir/code/cde" -destdir "$pkgdir"
+    make DESTDIR="$pkgdir" install
   )
 
   echo 'DEBUG: bit fiddling'
 
+  mkdir -p "$pkgdir/var/dt/"
   cd "$pkgdir/var/dt/"
   chmod 755 .
   chown bin .
@@ -95,6 +76,7 @@ package() {
   chgrp -R bin *
 
   echo 'DEBUG: mkdir'
+  mkdir -p "$pkgdir/etc/dt/"
   cd "$pkgdir/etc/dt/"
   chmod 755 .
   mkdir -p appconfig/appmanager/C
@@ -115,6 +97,7 @@ package() {
                  "$pkgdir/usr/lib/systemd/system/dtlogin.service" 
 
   install -dm755 "$pkgdir/usr/spool"
+  install -dm755 "$pkgdir/var/spool/calendar"
   install -Dm644 "$srcdir/code/cde/contrib/xinetd/cmsd" \
                  "$pkgdir/etc/xinetd.d/cmsd"
   install -Dm644 "$srcdir/code/cde/contrib/xinetd/ttdbserver" \
