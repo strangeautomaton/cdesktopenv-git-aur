@@ -13,7 +13,7 @@ arch=('i686' 'x86_64') # Some parts of CDE are not stable on x86_64 yet.
 license=('LGPL2')
 options=(!strip !zipman)
 install="cdesktopenv.install"
-depends=(openmotif xbitmaps rpcbind ksh ncurses libxss xbitmaps libxinerama libutempter rpcsvc-proto xorg-mkfontdir xorg-bdftopcf xorg-xrdb libxpm)
+depends=(openmotif xbitmaps rpcbind ksh ncurses libxss xbitmaps libxinerama libutempter rpcsvc-proto xorg-mkfontdir xorg-bdftopcf xorg-xrdb libxpm libxaw)
 makedepends=(tcl ncompress bison)
 optdepends=('xorg-fonts-100dpi: additional fonts'
             'cups: for printing support'
