@@ -6,15 +6,15 @@
 _gitname=cdesktopenv
 pkgname="$_gitname"-git
 pkgver=2.4.0
-pkgrel=0
-pkgdesc="CDE - Common Desktop Environment"
+pkgrel=1
+pkgdesc="Common Desktop Environment"
 url="http://sourceforge.net/projects/cdesktopenv/"
 arch=('i686' 'x86_64') # Some parts of CDE are not stable on x86_64 yet.
 license=('LGPL2')
 options=(!strip !zipman)
 install="cdesktopenv.install"
-depends=(openmotif xbitmaps rpcbind ksh ncurses libxss xbitmaps libxinerama rpcsvc-proto)
-makedepends=(tcl ncompress bison git)
+depends=(openmotif xbitmaps rpcbind ksh ncurses libxss xbitmaps libxinerama libutempter rpcsvc-proto xorg-mkfontdir xorg-bdftopcf xorg-xrdb libxpm)
+makedepends=(tcl ncompress bison)
 optdepends=('xorg-fonts-100dpi: additional fonts'
             'cups: for printing support'
             'xinetd: for rpc services')
@@ -25,16 +25,16 @@ source=("git+https://git.code.sf.net/p/cdesktopenv/code"
         'dtlogin.service'
         'fonts.alias'
         'fonts.dir'
-        'cde.desktop'
-        'startxsession.sh')
+        'startxsession.sh'
+        'cde.desktop')
 
 md5sums=('SKIP'
          'ba7fcfcfa2996be6d87b5a90dd94fd7b'
          '18f9ef4643ff7ed6637907f5cbdabecf'
          '5cc80c2851ea90b94e94b0c5d92d81fb'
          '897316929176464ebc9ad085f31e7284'
-         '7d11b9d2bc1234278f14151025744916'
-         '2e5557241915e4c2761ba136dbcba469')
+         '2e5557241915e4c2761ba136dbcba469'
+         '7d11b9d2bc1234278f14151025744916')
 
 pkgver() {
     cd "$srcdir/code/cde"
@@ -42,30 +42,27 @@ pkgver() {
 }
 
 build() {
-  cd "$srcdir/code/cde"
-  ./autogen.sh
-  #./configure --prefix=/usr
-  #./configure --libdir=/usr/lib  # TODO ?
-  ./configure --prefix=/usr/dt
-  make
+    cd "$srcdir/code/cde"
+
+	./autogen.sh
+	./configure --with-gnu-ld --prefix=/usr/dt
+	make
+
 }
 
 package() {
-  echo 'DEBUG: start package'
-  #cd "$srcdir/code/cde/admin/IntegTools/dbTools/"
+
   cd "$srcdir/code/cde"
 
-  echo 'DEBUG: make install'
   (
     export LANG=C
     export LC_ALL=C
     make DESTDIR="$pkgdir" install
   )
 
-  echo 'DEBUG: bit fiddling'
-
   mkdir -p "$pkgdir/var/dt/"
-  cd "$pkgdir/var/dt/"
+  cd "$pkgdir/var/dt"
+
   chmod 755 .
   chown bin .
   chgrp bin .
@@ -75,7 +72,6 @@ package() {
   chown -R bin *
   chgrp -R bin *
 
-  echo 'DEBUG: mkdir'
   mkdir -p "$pkgdir/etc/dt/"
   cd "$pkgdir/etc/dt/"
   chmod 755 .
@@ -87,7 +83,6 @@ package() {
   mkdir -p config/xfonts/C
   chmod -R 755 *
 
-  echo 'DEBUG: install stanza'
   chmod a+x $srcdir/startxsession.sh
   install -m644 "$srcdir"/fonts.{alias,dir} "$pkgdir/etc/dt/config/xfonts/C/"
   
@@ -105,4 +100,3 @@ package() {
   install -Dm644 "$srcdir/startxsession.sh" \
 		 "$pkgdir/usr/bin/startxsession.sh"
 }
-
